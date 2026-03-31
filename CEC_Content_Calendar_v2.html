@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEC Content Calendar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f5f3;color:#1a1a1a;min-height:100vh}
+
+/* HEADER */
+.header{background:#0E2341;padding:13px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.header-brand{display:flex;align-items:center;gap:10px}
+.logo{font-size:21px;font-weight:700;color:#ADBF00;letter-spacing:0.04em}
+.header h1{font-size:15px;font-weight:500;color:#fff;opacity:0.85}
+.header-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.legend{display:flex;gap:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#999}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.year-nav{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border-radius:8px;padding:5px 12px}
+.year-nav button{background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:0 2px;opacity:0.7;line-height:1}
+.year-nav button:hover{opacity:1}
+.year-label{font-size:14px;font-weight:600;color:#fff;min-width:38px;text-align:center}
+.saved-badge{font-size:11px;color:#ADBF00;opacity:0;transition:opacity 0.3s}
+.saved-badge.show{opacity:1}
+
+/* CALENDAR GRID */
+.main{padding:16px 18px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:750px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:460px){.grid{grid-template-columns:1fr}}
+.month-card{background:#fff;border:1px solid #e2e2da;border-radius:10px;overflow:hidden}
+.month-head{padding:7px 11px;font-size:13px;font-weight:600;color:#0E2341;background:#f0f1ec;border-bottom:1px solid #e2e2da;display:flex;align-items:center;justify-content:space-between}
+.month-q{font-size:10px;color:#ADBF00;font-weight:700;letter-spacing:0.05em}
+.month-count{font-size:10px;font-weight:400;color:#999;background:#fff;border-radius:10px;padding:1px 6px;border:1px solid #e2e2da}
+.month-body{padding:7px}
+.content-slot{margin-bottom:5px;border-radius:7px;border:1px solid transparent;cursor:pointer;transition:opacity 0.12s}
+.content-slot:hover{opacity:0.85}
+.slot-inner{display:flex;align-items:center;gap:5px;padding:5px 7px}
+.slot-type{font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em}
+.slot-status{font-size:9px;padding:1px 5px;border-radius:4px;white-space:nowrap;font-weight:600;flex-shrink:0}
+.status-idea{background:#f0f1ec;color:#888}
+.status-drafted{background:#FFF3CD;color:#856404}
+.status-review{background:#deeaf7;color:#185FA5}
+.status-published{background:#eaf3de;color:#3B6D11}
+.slot-title{font-size:11px;color:#444;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot-title.empty{font-style:italic;color:#bbb}
+.slot-remove{background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;color:#ccc;line-height:1;opacity:0}
+.content-slot:hover .slot-remove{opacity:1}
+.slot-remove:hover{background:rgba(0,0,0,0.07);color:#999}
+.add-btn{width:100%;background:none;border:1px dashed #ccc;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;color:#aaa;text-align:left;margin-top:3px;transition:all 0.12s}
+.add-btn:hover{border-color:#ADBF00;color:#3B6D11;background:#f7f9e8}
+.t-newsletter{background:#deeaf7;border-color:#b5cfe8}.t-newsletter .slot-type{background:#185FA5;color:#fff}
+.t-blog{background:#eaf3de;border-color:#c0dd97}.t-blog .slot-type{background:#3B6D11;color:#fff}
+.t-linkedin{background:#fbeaf0;border-color:#f4c0d1}.t-linkedin .slot-type{background:#993556;color:#fff}
+
+/* STUDIO OVERLAY */
+.studio-bg{position:fixed;inset:0;background:rgba(14,35,65,0.55);z-index:100;display:flex;align-items:stretch;justify-content:flex-end}
+.studio{background:#fff;width:min(700px,100vw);height:100vh;display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(0,0,0,0.18)}
+.studio-header{background:#0E2341;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.studio-back{background:none;border:none;color:#ADBF00;font-size:20px;cursor:pointer;padding:0;line-height:1}
+.studio-title{font-size:14px;font-weight:600;color:#fff;flex:1}
+.studio-month{font-size:12px;color:#aaa}
+.studio-body{flex:1;overflow-y:auto;padding:20px}
+.studio-footer{border-top:1px solid #e2e2da;padding:14px 20px;display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
+
+/* STUDIO FIELDS */
+.field{margin-bottom:14px}
+.field label{font-size:10px;color:#888;display:block;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+.field input,.field select,.field textarea{width:100%;font-size:13px;border:1px solid #ddd;border-radius:7px;padding:8px 10px;background:#fff;color:#1a1a1a;outline:none;transition:border-color 0.12s;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#ADBF00}
+.field textarea{resize:vertical;line-height:1.65}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* SUGGEST CHIPS */
+.suggest-label{font-size:10px;color:#999;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+.suggest-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.chip{font-size:11px;padding:3px 9px;border:1px solid #ddd;border-radius:5px;cursor:pointer;color:#555;background:#fafafa;transition:all 0.12s;line-height:1.4}
+.chip:hover{border-color:#ADBF00;background:#f7f9e8;color:#3B6D11}
+
+/* GENERATED CONTENT */
+.gen-section{margin-top:4px}
+.gen-label{font-size:10px;color:#3B6D11;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.gen-label::after{content:'';flex:1;height:1px;background:#c0dd97}
+.gen-content{width:100%;font-size:13px;border:1px solid #c0dd97;border-radius:8px;padding:12px;background:#f7f9e8;color:#1a1a1a;outline:none;font-family:inherit;line-height:1.75;resize:vertical;min-height:300px}
+.gen-content:focus{border-color:#3B6D11}
+.generating{display:flex;align-items:center;gap:10px;padding:20px;color:#888;font-size:13px}
+.dot-spin{width:18px;height:18px;border:2px solid #e0e0d8;border-top-color:#ADBF00;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* BUTTONS */
+.btn{font-size:13px;padding:9px 16px;border-radius:7px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#333;font-weight:500;white-space:nowrap;transition:all 0.12s}
+.btn:hover{background:#f4f5f3}
+.btn-primary{background:#0E2341;color:#fff;border-color:#0E2341}
+.btn-primary:hover{opacity:0.88}
+.btn-lime{background:#ADBF00;color:#0E2341;border-color:#ADBF00;font-weight:600}
+.btn-lime:hover{opacity:0.88}
+.btn-sm{font-size:12px;padding:6px 12px}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid #eee;margin:16px 0}
+
+/* SIMPLE MODAL for add */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal{background:#fff;border-radius:12px;padding:22px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+.modal h3{font-size:15px;font-weight:600;color:#0E2341;margin-bottom:14px}
+.modal-btns{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0E2341;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:400;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* API key banner */
+.api-banner{background:#FFF3CD;border-bottom:1px solid #ffc107;padding:8px 22px;font-size:12px;color:#856404;display:flex;align-items:center;gap:10px}
+.api-banner input{font-size:12px;border:1px solid #ffc107;border-radius:5px;padding:4px 8px;background:#fff;color:#333;outline:none;width:320px;font-family:monospace}
+.api-banner button{font-size:12px;padding:4px 10px;border-radius:5px;border:1px solid #856404;background:#fff;color:#856404;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <span class="logo">CEC</span>
+    <h1>Content Calendar</h1>
+  </div>
+  <div class="header-right">
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:#185FA5"></div>Newsletter</div>
+      <div class="leg"><div class="leg-dot" style="background:#3B6D11"></div>Blog</div>
+      <div class="leg"><div class="leg-dot" style="background:#993556"></div>LinkedIn</div>
+    </div>
+    <div class="year-nav">
+      <button onclick="changeYear(-1)">&#8249;</button>
+      <span class="year-label" id="yearLabel">2026</span>
+      <button onclick="changeYear(1)">&#8250;</button>
+    </div>
+    <span class="saved-badge" id="savedBadge">&#10003; Saved</span>
+  </div>
+</div>
+
+<div class="api-banner" id="apiBanner">
+  <span>Claude API key:</span>
+  <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+  <button onclick="saveApiKey()">Save</button>
+  <span id="apiStatus" style="color:#3B6D11;display:none">&#10003; Key saved</span>
+</div>
+
+<div class="main">
+  <div class="grid" id="calGrid"></div>
+</div>
+
+<!-- Quick add modal -->
+<div class="modal-bg" id="addModal" style="display:none">
+  <div class="modal">
+    <h3 id="addModalTitle">Add content</h3>
+    <div class="field">
+      <label>Content type</label>
+      <select id="amType">
+        <option value="blog">Blog post</option>
+        <option value="newsletter">Newsletter</option>
+        <option value="linkedin">LinkedIn post</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Title / topic</label>
+      <input type="text" id="amTopic" placeholder="e.g. Why early ecology advice saves developers money" />
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeAddModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewItem()">Add & open</button>
+    </div>
+  </div>
+</div>
+
+<!-- Content Studio -->
+<div class="studio-bg" id="studio" style="display:none" onclick="handleStudioBgClick(event)">
+  <div class="studio" id="studioPanel">
+    <div class="studio-header">
+      <button class="studio-back" onclick="closeStudio()">&#8592;</button>
+      <div style="flex:1">
+        <div class="studio-title" id="studioTitle">Content Studio</div>
+        <div class="studio-month" id="studioMonth"></div>
+      </div>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff" onclick="saveAndClose()">Save &amp; close</button>
+    </div>
+
+    <div class="studio-body" id="studioBody">
+      <!-- Brief section -->
+      <div class="field-row">
+        <div class="field">
+          <label>Content type</label>
+          <select id="sType" onchange="refreshSuggestions()">
+            <option value="blog">Blog post</option>
+            <option value="newsletter">Newsletter</option>
+            <option value="linkedin">LinkedIn post</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Target audience</label>
+          <select id="sAudience">
+            <option value="developers">Developers</option>
+            <option value="landowners">Landowners</option>
+            <option value="householders">Householders</option>
+            <option value="infrastructure">Infrastructure managers</option>
+            <option value="general">General / mixed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Topic / title</label>
+        <input type="text" id="sTopic" placeholder="What is this piece about?" />
+      </div>
+
+      <div class="field">
+        <label>Additional notes for Claude (optional)</label>
+        <textarea id="sNotes" rows="2" placeholder="e.g. Reference the Langarth case study. Focus on the pre-construction risk angle. Keep it under 600 words."></textarea>
+      </div>
+
+      <div id="suggestWrap"></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Status</label>
+          <select id="sStatus">
+            <option value="idea">Idea</option>
+            <option value="drafted">Drafted</option>
+            <option value="review">In review</option>
+            <option value="published">Published</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Generate controls -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="btn btn-lime" id="generateBtn" onclick="generateContent()">&#9654; Generate with Claude</button>
+        <button class="btn btn-sm" id="regenBtn" onclick="regenerate()" style="display:none">&#8635; Regenerate</button>
+        <button class="btn btn-sm" id="altBtn" onclick="regenerateAlt()" style="display:none">Try different angle</button>
+      </div>
+
+      <!-- Generated content area -->
+      <div class="gen-section" id="genSection" style="display:none">
+        <div class="gen-label">Generated content</div>
+        <textarea class="gen-content" id="genContent" spellcheck="true"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="copyGenerated()">Copy to clipboard</button>
+          <button class="btn btn-sm btn-primary" onclick="saveGenerated()">Save to calendar item</button>
+        </div>
+      </div>
+
+      <!-- Saved content (if exists) -->
+      <div id="savedSection" style="display:none;margin-top:16px">
+        <hr class="divider">
+        <div class="gen-label" style="color:#185FA5">Saved content</div>
+        <textarea class="gen-content" id="savedContent" spellcheck="true" style="border-color:#b5cfe8;background:#deeaf7"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-sm" onclick="copySaved()">Copy to clipboard</button>
+          <button class="btn btn-sm" style="color:#c00;border-color:#ecc" onclick="clearSaved()">Clear saved content</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const QUARTERS={0:'Q1',1:'Q1',2:'Q1',3:'Q2',4:'Q2',5:'Q2',6:'Q3',7:'Q3',8:'Q3',9:'Q4',10:'Q4',11:'Q4'};
+const SEASON={0:'winter',1:'winter',2:'spring',3:'spring',4:'spring',5:'summer',6:'summer',7:'summer',8:'autumn',9:'autumn',10:'autumn',11:'winter'};
+const STATUS_LABELS={idea:'Idea',drafted:'Drafted',review:'In review',published:'Published'};
+const STATUS_CLASSES={idea:'status-idea',drafted:'status-drafted',review:'status-review',published:'status-published'};
+
+const SUGGESTIONS={
+  0:[{type:'newsletter',topic:'Planning for ecology in 2026 — what developers need to know before spring survey season',audience:'developers'},{type:'blog',topic:'Before you buy: the ecological due diligence checklist every developer needs',audience:'developers'},{type:'linkedin',topic:'Buying land without ecological insight is buying an expensive headache. Here is what to check first.',audience:'developers'}],
+  1:[{type:'blog',topic:'What a Preliminary Ecological Appraisal actually tells you — and why it matters before planning',audience:'developers'},{type:'linkedin',topic:'Poor quality surveys get rejected by planning authorities. Here is what good looks like.',audience:'developers'},{type:'blog',topic:'BNG calculations: why integrated design reduces the offset units you need to buy',audience:'developers'}],
+  2:[{type:'blog',topic:'Spring survey season: bat, dormouse and great crested newt windows explained',audience:'developers'},{type:'linkedin',topic:'Miss a survey window and you could wait six months. Here is what opens in March.',audience:'developers'}],
+  3:[{type:'newsletter',topic:'Biodiversity Net Gain — the landowner opportunity in Cornwall',audience:'landowners'},{type:'blog',topic:'How BNG is creating a new income stream for Cornish landowners',audience:'landowners'},{type:'linkedin',topic:'You cannot sell your houses until BNG discharge is resolved. Here is how to prevent that.',audience:'developers'}],
+  4:[{type:'blog',topic:'Bat surveys and house sales: how early advice prevents a year-long delay',audience:'householders'},{type:'linkedin',topic:'A bat roost in the loft can delay a house sale by nearly a year. It does not have to.',audience:'householders'}],
+  5:[{type:'blog',topic:'Why a single point of contact for ecology and landscape saves developers time and money',audience:'developers'},{type:'linkedin',topic:'Separate consultants create coordination gaps. One team from day one does not.',audience:'developers'},{type:'blog',topic:'Pre-construction checks: the cheapest insurance against a build stop on day one',audience:'developers'}],
+  6:[{type:'newsletter',topic:'Summer ecology update — what is in season and what to plan for autumn',audience:'general'},{type:'blog',topic:'From outline to Reserved Matters: how continuity of ecological expertise saves time and cost',audience:'developers'},{type:'linkedin',topic:'Conditions get forgotten. A stop order costs far more than the conditions discharge work that prevents it.',audience:'developers'}],
+  7:[{type:'blog',topic:'What Cornwall Wildlife Trust ownership actually means — in practice, not on paper',audience:'general'},{type:'linkedin',topic:'100% of our profits go back to Cornwall wildlife. Here is what that has meant over 30 years.',audience:'general'}],
+  8:[{type:'blog',topic:'Ecological Clerk of Works: what they do, when you need one, and what a stop order costs without one',audience:'developers'},{type:'linkedin',topic:'An inadvertent licence breach on site can stop your build. An ECoW is far cheaper than that risk.',audience:'developers'}],
+  9:[{type:'newsletter',topic:'Planning ecology for 2027 — the conversations to have now',audience:'developers'},{type:'blog',topic:'BNG monitoring: what developers owe the LPA after practical completion',audience:'developers'},{type:'linkedin',topic:'The LPA can penalise you for forgetting monitoring obligations. Here is how to make sure that never happens.',audience:'developers'}],
+  10:[{type:'blog',topic:'Making Space for Nature: what 24 Cornish sites taught us about ecology in towns',audience:'general'},{type:'linkedin',topic:'As CWT partners, CEC has BNG offset sites in place — removing a bottleneck that stops many developers.',audience:'developers'}],
+  11:[{type:'blog',topic:'A year in ecology: highlights from 2026 and what to plan for in 2027',audience:'general'},{type:'linkedin',topic:'Another year working in Cornwall. What we learned — and what developers need to know going into 2027.',audience:'general'}]
+};
+
+const STORAGE_KEY='cec_calendar_v4';
+const API_KEY_STORAGE='cec_api_key';
+let currentYear=2026;
+let data={};
+let studioYear=null, studioMonth=null, studioIdx=null;
+let apiKey='';
+
+// ── API KEY ──
+function loadApiKey(){
+  apiKey=localStorage.getItem(API_KEY_STORAGE)||'';
+  if(apiKey){
+    document.getElementById('apiKeyInput').value=apiKey;
+    document.getElementById('apiStatus').style.display='inline';
+    document.getElementById('apiBanner').style.background='#eaf3de';
+    document.getElementById('apiBanner').style.borderBottomColor='#c0dd97';
+  }
+}
+function saveApiKey(){
+  apiKey=document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem(API_KEY_STORAGE,apiKey);
+  document.getElementById('apiStatus').style.display='inline';
+  document.getElementById('apiBanner').style.background='#eaf3de';
+  document.getElementById('apiBanner').style.borderBottomColor='#c0dd97';
+  showToast('API key saved');
+}
+
+// ── DATA ──
+function key(y,m){return `${y}-${m}`}
+function load(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)data=JSON.parse(s);}catch(e){data={}}}
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+    const b=document.getElementById('savedBadge');b.classList.add('show');
+    setTimeout(()=>b.classList.remove('show'),1800);
+  }catch(e){}
+}
+function getItems(y,m){
+  const k=key(y,m);
+  if(!data[k])data[k]=SUGGESTIONS[m]?JSON.parse(JSON.stringify(SUGGESTIONS[m])):[];
+  return data[k];
+}
+
+// ── CALENDAR ──
+function changeYear(d){currentYear+=d;document.getElementById('yearLabel').textContent=currentYear;render()}
+
+function render(){
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML='';
+  for(let m=0;m<12;m++){
+    const items=getItems(currentYear,m);
+    const card=document.createElement('div');
+    card.className='month-card';
+    const head=document.createElement('div');
+    head.className='month-head';
+    const pub=items.filter(i=>i.status==='published').length;
+    head.innerHTML=`<span>${MONTHS[m]}</span><span style="display:flex;align-items:center;gap:6px"><span class="month-q">${QUARTERS[m]}</span><span class="month-count">${pub}/${items.length}</span></span>`;
+    card.appendChild(head);
+    const body=document.createElement('div');
+    body.className='month-body';
+    items.forEach((item,i)=>{
+      const tl={newsletter:'Newsletter',blog:'Blog',linkedin:'LinkedIn'}[item.type]||item.type;
+      const st=item.status||'idea';
+      const slot=document.createElement('div');
+      slot.className=`content-slot t-${item.type}`;
+      slot.onclick=()=>openStudio(currentYear,m,i);
+      slot.innerHTML=`<div class="slot-inner">
+        <span class="slot-type">${tl}</span>
+        <span class="slot-status ${STATUS_CLASSES[st]}">${STATUS_LABELS[st]}</span>
+        <span class="slot-title${item.topic?'':' empty'}">${item.topic||'Untitled'}</span>
+        <button class="slot-remove" title="Remove" onclick="event.stopPropagation();removeItem(${currentYear},${m},${i})">&#215;</button>
+      </div>`;
+      body.appendChild(slot);
+    });
+    const addBtn=document.createElement('button');
+    addBtn.className='add-btn';
+    addBtn.textContent='+ Add content';
+    addBtn.onclick=()=>openAddModal(currentYear,m);
+    body.appendChild(addBtn);
+    card.appendChild(body);
+    grid.appendChild(card);
+  }
+}
+
+// ── ADD MODAL ──
+let addModalYear=null, addModalMonth=null;
+function openAddModal(y,m){
+  addModalYear=y;addModalMonth=m;
+  document.getElementById('addModalTitle').textContent=`Add content — ${MONTHS[m]} ${y}`;
+  document.getElementById('amType').value='blog';
+  document.getElementById('amTopic').value='';
+  document.getElementById('addModal').style.display='flex';
+  setTimeout(()=>document.getElementById('amTopic').focus(),60);
+}
+function closeAddModal(){document.getElementById('addModal').style.display='none'}
+function saveNewItem(){
+  const type=document.getElementById('amType').value;
+  const topic=document.getElementById('amTopic').value.trim();
+  if(!topic){document.getElementById('amTopic').focus();return}
+  const k=key(addModalYear,addModalMonth);
+  if(!data[k])data[k]=SUGGESTIONS[addModalMonth]?JSON.parse(JSON.stringify(SUGGESTIONS[addModalMonth])):[];
+  data[k].push({type,topic,audience:'developers',status:'idea',content:'',notes:''});
+  const idx=data[k].length-1;
+  closeAddModal();save();render();
+  openStudio(addModalYear,addModalMonth,idx);
+}
+function removeItem(y,m,i){data[key(y,m)].splice(i,1);save();render()}
+
+// ── STUDIO ──
+function openStudio(y,m,i){
+  studioYear=y;studioMonth=m;studioIdx=i;
+  const item=data[key(y,m)][i];
+  document.getElementById('studioTitle').textContent=item.topic||'Untitled';
+  document.getElementById('studioMonth').textContent=`${MONTHS[m]} ${y}`;
+  document.getElementById('sType').value=item.type||'blog';
+  document.getElementById('sAudience').value=item.audience||'developers';
+  document.getElementById('sTopic').value=item.topic||'';
+  document.getElementById('sNotes').value=item.notes||'';
+  document.getElementById('sStatus').value=item.status||'idea';
+  document.getElementById('regenBtn').style.display='none';
+  document.getElementById('altBtn').style.display='none';
+  document.getElementById('genSection').style.display='none';
+  document.getElementById('genContent').value='';
+  refreshSuggestions();
+  if(item.content){
+    document.getElementById('savedSection').style.display='block';
+    document.getElementById('savedContent').value=item.content;
+  } else {
+    document.getElementById('savedSection').style.display='none';
+  }
+  document.getElementById('studio').style.display='flex';
+}
+
+function closeStudio(){document.getElementById('studio').style.display='none'}
+
+function handleStudioBgClick(e){
+  if(e.target===document.getElementById('studio')) closeStudio();
+}
+
+function saveAndClose(){
+  commitStudio();
+  closeStudio();
+  save();render();
+  showToast('Saved');
+}
+
+function commitStudio(){
+  const k=key(studioYear,studioMonth);
+  const item=data[k][studioIdx];
+  item.type=document.getElementById('sType').value;
+  item.audience=document.getElementById('sAudience').value;
+  item.topic=document.getElementById('sTopic').value.trim();
+  item.notes=document.getElementById('sNotes').value.trim();
+  item.status=document.getElementById('sStatus').value;
+  document.getElementById('studioTitle').textContent=item.topic||'Untitled';
+}
+
+function refreshSuggestions(){
+  const month=studioMonth;
+  const wrap=document.getElementById('suggestWrap');
+  if(month===null){wrap.innerHTML='';return}
+  const suggs=SUGGESTIONS[month]||[];
+  if(!suggs.length){wrap.innerHTML='';return}
+  const tags=suggs.map(s=>{
+    const safe=s.topic.replace(/`/g,"'");
+    return `<span class="chip" onclick="applySuggest('${s.type}','${safe.replace(/'/g,"\\'")}','${s.audience}')">${s.topic}</span>`;
+  }).join('');
+  wrap.innerHTML=`<div class="suggest-label">Suggested topics for ${MONTHS[month]}</div><div class="suggest-chips" style="margin-bottom:14px">${tags}</div>`;
+}
+
+function applySuggest(type,topic,audience){
+  document.getElementById('sType').value=type;
+  document.getElementById('sTopic').value=topic;
+  document.getElementById('sAudience').value=audience;
+}
+
+// ── CLAUDE API ──
+function buildSystemPrompt(){
+  return `You are the content writer for Cornwall Environmental Consultants (CEC), a leading ecology, landscape and sustainability consultancy based near Truro, Cornwall. CEC has been operating for over 30 years and is fully owned by Cornwall Wildlife Trust — 100% of profits are returned to the Trust.
+
+Your role is to write high-quality, commercially grounded content for CEC across three formats: newsletters, blog posts and LinkedIn posts.
+
+AUDIENCES: Developers (care about planning risk, cost, programme, site viability), Landowners (care about ecological value, BNG income, land stewardship), Householders (care about navigating ecology simply and without delay), Infrastructure managers (care about scale, compliance, specialist expertise), General (mixed professional audience).
+
+TONE: Professional but approachable. Plain English. Grounded in practical reality. Never preachy about the environment. Never alarmist. Always connect technical points to commercial or practical implications. Confident but not arrogant.
+
+KEY THEMES: Survey timing and missed windows, Biodiversity Net Gain (BNG) — mandatory for most developments, Early ecological advice vs late remediation costs, The cost of not having ecology involved (stop orders, delayed house sales, unnecessary offset unit purchases), CEC's single point of contact proposition, Cornwall Wildlife Trust ownership as credibility and purpose, Landscape design as part of planning success, Landowner BNG opportunities.
+
+CASE STUDIES TO REFERENCE:
+- Newquay Cycle Hub (DarntonB3): landscape design, arboricultural assessment, BNG, planning secured
+- Greystones roof replacement: bat roost, householder, avoided licence saving ~1 year delay, house sale completed
+- A30 Chiverton-Carland Cross (Costain): £300m road scheme, badger setts, delivered within programme
+- Langarth Garden Village, Truro (Arcadis): major mixed-use, full ecology suite, Building with Nature award, outline planning secured
+- Making Space for Nature (Cornwall Council): 24 sites, 7 towns, 28 rugby pitches of habitat
+- Trethevy Quoit / Treffry Viaduct (Cornwall Heritage Trust): heritage ecology, management plans
+- Steda Lowarth: landowner, PEA, reptile survey, biodiversity recommendations
+
+THE RISK FRAMEWORK (use in developer content):
+- Buying land without ecological insight = buying an expensive headache
+- Missing survey windows = months of delay
+- Poor BNG calculations = wasted money on unnecessary offset units
+- Unresolved BNG discharge = cannot sell houses
+- No pre-construction check = build stops on day one
+- Forgotten conditions = stop order
+- No ECoW on site = inadvertent licence breach, all work stops
+- Forgotten monitoring = LPA penalties
+
+OUTPUT RULES:
+Newsletter: one main topic, fixed structure (opening, main topic, seasonal ecology reminder, soft CTA), short paragraphs, subheadings, easy to skim, 400-600 words.
+Blog post: 600-900 words, strong hook, plain English, commercially grounded, practical takeaway, soft CTA at end.
+LinkedIn post: 150-300 words, first line stops the scroll, one idea only, end with a question, no corporate language.
+
+Write only the content itself — no preamble, no "here is your post", no meta-commentary. Just the finished piece ready to use.`;
+}
+
+function buildUserPrompt(type, topic, audience, month, notes){
+  const s=SEASON[month], q=QUARTERS[month], mn=MONTHS[month];
+  let p='';
+  if(type==='newsletter'){
+    p=`Write the ${q} newsletter for CEC.\n\nMain topic: "${topic}"\nTarget audience: ${audience}\nSeason: ${s} (${mn})\n\nUse the fixed structure: opening → main topic → seasonal ecology reminder for ${s} → soft CTA (book a call / request a PEA / cecenvironment.co.uk). Short paragraphs, subheadings, easy to skim.`;
+  } else if(type==='blog'){
+    p=`Write a blog post for CEC.\n\nTopic: "${topic}"\nTarget audience: ${audience}\nMonth: ${mn} (${s})\n\nAim for 600-900 words. Strong opening hook. Plain English. Connect every technical point to a commercial or planning implication. Practical takeaway. Soft CTA at the end. Reference a relevant case study if it fits naturally.`;
+  } else {
+    p=`Write a LinkedIn post for CEC.\n\nTopic: "${topic}"\nTarget audience: ${audience}\n\n150-300 words. First line must stop the scroll. Plain English. Frame around one insight, risk or common mistake. End with a question. One idea only. Do not sound corporate.`;
+  }
+  if(notes) p+=`\n\nAdditional instructions: ${notes}`;
+  return p;
+}
+
+async function callClaude(systemPrompt, userPrompt){
+  if(!apiKey){
+    throw new Error('No API key. Please enter your Claude API key in the banner at the top.');
+  }
+  const response = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1500,
+      system: systemPrompt,
+      messages:[{role:'user',content:userPrompt}]
+    })
+  });
+  if(!response.ok){
+    const err=await response.json().catch(()=>({}));
+    throw new Error(err.error?.message||`API error ${response.status}`);
+  }
+  const data=await response.json();
+  return data.content.map(b=>b.text||'').join('');
+}
+
+async function generateContent(){
+  const topic=document.getElementById('sTopic').value.trim();
+  if(!topic){document.getElementById('sTopic').focus();showToast('Please enter a topic first');return}
+  const type=document.getElementById('sType').value;
+  const audience=document.getElementById('sAudience').value;
+  const notes=document.getElementById('sNotes').value.trim();
+  const genSection=document.getElementById('genSection');
+  const genContent=document.getElementById('genContent');
+  const generateBtn=document.getElementById('generateBtn');
+
+  genSection.style.display='block';
+  genContent.value='';
+  genContent.placeholder='Generating...';
+  generateBtn.disabled=true;
+  generateBtn.textContent='Generating...';
+
+  // Show spinner
+  const spinner=document.createElement('div');
+  spinner.className='generating';
+  spinner.innerHTML='<div class="dot-spin"></div><span>Claude is writing your content...</span>';
+  genContent.parentNode.insertBefore(spinner,genContent);
+  genContent.style.display='none';
+
+  try {
+    const text=await callClaude(buildSystemPrompt(), buildUserPrompt(type,topic,audience,studioMonth,notes));
+    spinner.remove();
+    genContent.style.display='block';
+    genContent.value=text;
+    genContent.placeholder='';
+    document.getElementById('regenBtn').style.display='inline-flex';
+    document.getElementById('altBtn').style.display='inline-flex';
+    // Auto-update status to drafted
+    document.getElementById('sStatus').value='drafted';
+  } catch(e){
+    spinner.remove();
+    genContent.style.display='block';
+    genContent.value='';
+    genContent.placeholder='Error: '+e.message;
+    showToast(e.message);
+  }
+  generateBtn.disabled=false;
+  generateBtn.textContent='▶ Generate with Claude';
+}
+
+async function regenerate(){
+  document.getElementById('genContent').value='';
+  await generateContent();
+}
+
+async function regenerateAlt(){
+  const notes=document.getElementById('sNotes').value.trim();
+  const extra='Try a completely different angle or framing from the previous attempt. '+(notes||'');
+  const orig=document.getElementById('sNotes').value;
+  document.getElementById('sNotes').value=extra;
+  await generateContent();
+  document.getElementById('sNotes').value=orig;
+}
+
+function copyGenerated(){
+  const text=document.getElementById('genContent').value;
+  if(!text)return;
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard'));
+}
+
+function saveGenerated(){
+  const text=document.getElementById('genContent').value.trim();
+  if(!text)return;
+  commitStudio();
+  data[key(studioYear,studioMonth)][studioIdx].content=text;
+  data[key(studioYear,studioMonth)][studioIdx].status='drafted';
+  document.getElementById('sStatus').value='drafted';
+  document.getElementById('savedContent').value=text;
+  document.getElementById('savedSection').style.display='block';
+  save();render();
+  showToast('Saved to calendar item');
+}
+
+function copySaved(){
+  navigator.clipboard.writeText(document.getElementById('savedContent').value).then(()=>showToast('Copied to clipboard'));
+}
+
+function clearSaved(){
+  data[key(studioYear,studioMonth)][studioIdx].content='';
+  document.getElementById('savedSection').style.display='none';
+  save();render();showToast('Saved content cleared');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+document.getElementById('addModal').addEventListener('click',e=>{if(e.target===document.getElementById('addModal'))closeAddModal()});
+document.getElementById('amTopic').addEventListener('keydown',e=>{if(e.key==='Enter')saveNewItem()});
+
+load();loadApiKey();render();
+</script>
+</body>
+</html>
