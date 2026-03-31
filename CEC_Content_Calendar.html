@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEC Content Calendar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f5f3;color:#1a1a1a;min-height:100vh}
+.header{background:#0E2341;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.header-brand{display:flex;align-items:center;gap:12px}
+.logo{font-size:22px;font-weight:700;color:#ADBF00;letter-spacing:0.04em}
+.header h1{font-size:15px;font-weight:500;color:#fff;opacity:0.85}
+.header-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.legend{display:flex;gap:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#999}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.year-nav{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.1);border-radius:8px;padding:5px 12px}
+.year-nav button{background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:0 2px;opacity:0.7;line-height:1}
+.year-nav button:hover{opacity:1}
+.year-label{font-size:14px;font-weight:600;color:#fff;min-width:38px;text-align:center}
+.saved-badge{font-size:11px;color:#ADBF00;opacity:0;transition:opacity 0.3s}
+.saved-badge.show{opacity:1}
+.main{padding:16px 18px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:750px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:460px){.grid{grid-template-columns:1fr}}
+.month-card{background:#fff;border:1px solid #e2e2da;border-radius:10px;overflow:hidden}
+.month-head{padding:7px 11px;font-size:13px;font-weight:600;color:#0E2341;background:#f0f1ec;border-bottom:1px solid #e2e2da;display:flex;align-items:center;justify-content:space-between}
+.month-q{font-size:10px;color:#ADBF00;font-weight:700;letter-spacing:0.05em}
+.month-count{font-size:10px;font-weight:400;color:#999;background:#fff;border-radius:10px;padding:1px 6px;border:1px solid #e2e2da}
+.month-body{padding:7px}
+.content-slot{margin-bottom:5px;border-radius:7px;border:1px solid transparent;position:relative}
+.slot-inner{display:flex;align-items:center;gap:5px;padding:5px 7px}
+.slot-type{font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;letter-spacing:0.04em}
+.slot-status{font-size:9px;padding:1px 5px;border-radius:4px;white-space:nowrap;flex-shrink:0;font-weight:600}
+.status-idea{background:#f0f1ec;color:#888}
+.status-drafted{background:#FFF3CD;color:#856404}
+.status-review{background:#deeaf7;color:#185FA5}
+.status-published{background:#eaf3de;color:#3B6D11}
+.slot-title{font-size:11px;color:#444;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot-title.empty{font-style:italic;color:#bbb}
+.slot-actions{display:none;gap:2px;flex-shrink:0}
+.content-slot:hover .slot-actions{display:flex}
+.slot-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;border-radius:4px;color:#999;line-height:1}
+.slot-btn:hover{background:rgba(0,0,0,0.07);color:#333}
+.add-btn{width:100%;background:none;border:1px dashed #ccc;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;color:#aaa;text-align:left;margin-top:3px;transition:all 0.12s}
+.add-btn:hover{border-color:#ADBF00;color:#3B6D11;background:#f7f9e8}
+.t-newsletter{background:#deeaf7;border-color:#b5cfe8}.t-newsletter .slot-type{background:#185FA5;color:#fff}
+.t-blog{background:#eaf3de;border-color:#c0dd97}.t-blog .slot-type{background:#3B6D11;color:#fff}
+.t-linkedin{background:#fbeaf0;border-color:#f4c0d1}.t-linkedin .slot-type{background:#993556;color:#fff}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.42);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal{background:#fff;border-radius:12px;padding:22px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+.modal h3{font-size:15px;font-weight:600;color:#0E2341;margin-bottom:16px}
+.form-row{margin-top:11px}
+.form-row label{font-size:10px;color:#888;display:block;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+.modal select,.modal input,.modal textarea{width:100%;font-size:13px;border:1px solid #ddd;border-radius:7px;padding:8px 10px;background:#fff;color:#1a1a1a;outline:none;transition:border-color 0.12s;font-family:inherit}
+.modal select:focus,.modal input:focus,.modal textarea:focus{border-color:#ADBF00}
+.modal textarea{resize:vertical;min-height:90px;line-height:1.6}
+.char-count{font-size:10px;color:#bbb;text-align:right;margin-top:3px}
+.suggest-wrap{margin-top:12px}
+.suggest-label{font-size:10px;color:#999;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+.suggest-tags{display:flex;flex-wrap:wrap;gap:5px}
+.suggest-tag{font-size:11px;padding:3px 9px;border:1px solid #ddd;border-radius:5px;cursor:pointer;color:#555;background:#fafafa;transition:all 0.12s;line-height:1.4}
+.suggest-tag:hover{border-color:#ADBF00;background:#f7f9e8;color:#3B6D11}
+.modal-btns{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+.modal-btns button{font-size:13px;padding:8px 16px;border-radius:7px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#333;font-weight:500}
+.modal-btns .primary{background:#0E2341;color:#fff;border-color:#0E2341}
+.modal-btns button:hover{opacity:0.85}
+.prompt-head{font-size:10px;color:#888;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+.prompt-box{background:#f4f5f3;border:1px solid #e2e2da;border-radius:8px;padding:14px;font-size:12px;color:#333;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow-y:auto}
+.saved-content-box{background:#f7f9e8;border:1px solid #c0dd97;border-radius:8px;padding:12px;font-size:12px;color:#333;line-height:1.65;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;margin-top:10px}
+.saved-content-label{font-size:10px;color:#3B6D11;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px}
+.copy-btn{width:100%;margin-top:10px;font-size:13px;padding:9px;border:1px solid #ddd;border-radius:7px;background:#fff;cursor:pointer;color:#0E2341;font-weight:500;transition:all 0.15s}
+.copy-btn:hover{background:#f0f1ec}
+.copy-btn.copied{background:#eaf3de;color:#3B6D11;border-color:#c0dd97}
+.prompt-note{font-size:11px;color:#aaa;margin-top:8px;text-align:center;line-height:1.5}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0E2341;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:300;white-space:nowrap}
+.toast.show{opacity:1}
+.divider{border:none;border-top:1px solid #eee;margin:14px 0}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <span class="logo">CEC</span>
+    <h1>Content Calendar</h1>
+  </div>
+  <div class="header-right">
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:#185FA5"></div>Newsletter</div>
+      <div class="leg"><div class="leg-dot" style="background:#3B6D11"></div>Blog</div>
+      <div class="leg"><div class="leg-dot" style="background:#993556"></div>LinkedIn</div>
+    </div>
+    <div class="year-nav">
+      <button onclick="changeYear(-1)">&#8249;</button>
+      <span class="year-label" id="yearLabel">2026</span>
+      <button onclick="changeYear(1)">&#8250;</button>
+    </div>
+    <span class="saved-badge" id="savedBadge">&#10003; Saved</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="grid" id="calGrid"></div>
+</div>
+
+<!-- Add / Edit modal -->
+<div class="modal-bg" id="modal" style="display:none">
+  <div class="modal">
+    <h3 id="modalTitle">Add content</h3>
+    <div class="form-row">
+      <label>Content type</label>
+      <select id="mType">
+        <option value="newsletter">Newsletter (quarterly)</option>
+        <option value="blog">Blog post</option>
+        <option value="linkedin">LinkedIn post</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Title / topic</label>
+      <input type="text" id="mTopic" placeholder="e.g. Why early ecology advice saves developers money" />
+    </div>
+    <div class="form-row">
+      <label>Target audience</label>
+      <select id="mAudience">
+        <option value="developers">Developers</option>
+        <option value="landowners">Landowners / land managers</option>
+        <option value="householders">Householders</option>
+        <option value="infrastructure">Infrastructure managers</option>
+        <option value="general">General / mixed</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Status</label>
+      <select id="mStatus">
+        <option value="idea">Idea</option>
+        <option value="drafted">Drafted</option>
+        <option value="review">In review</option>
+        <option value="published">Published</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Content (optional — paste finished post here)</label>
+      <textarea id="mContent" placeholder="Paste the finished post here once it has been written and approved..."></textarea>
+      <div class="char-count" id="charCount">0 characters</div>
+    </div>
+    <div class="suggest-wrap" id="suggestWrap"></div>
+    <div class="modal-btns">
+      <button onclick="closeModal()">Cancel</button>
+      <button class="primary" onclick="saveItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Prompt / view modal -->
+<div class="modal-bg" id="promptModal" style="display:none">
+  <div class="modal">
+    <h3 id="pModalTitle">Generate prompt</h3>
+    <div class="prompt-head">ChatGPT prompt — copy and paste with the CEC GPT loaded</div>
+    <div class="prompt-box" id="promptText"></div>
+    <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy prompt to clipboard</button>
+    <p class="prompt-note">Paste into ChatGPT &rarr; the CEC custom GPT handles the rest</p>
+    <div id="savedContentWrap" style="display:none">
+      <hr class="divider">
+      <div class="saved-content-label">Saved content</div>
+      <div class="saved-content-box" id="savedContentBox"></div>
+      <button class="copy-btn" id="copyContentBtn" onclick="copyContent()" style="margin-top:8px">Copy saved content to clipboard</button>
+    </div>
+    <div class="modal-btns">
+      <button onclick="document.getElementById('promptModal').style.display='none'">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const QUARTERS={0:'Q1',1:'Q1',2:'Q1',3:'Q2',4:'Q2',5:'Q2',6:'Q3',7:'Q3',8:'Q3',9:'Q4',10:'Q4',11:'Q4'};
+const SEASON={0:'winter',1:'winter',2:'spring',3:'spring',4:'spring',5:'summer',6:'summer',7:'summer',8:'autumn',9:'autumn',10:'autumn',11:'winter'};
+const STATUS_LABELS={idea:'Idea',drafted:'Drafted',review:'In review',published:'Published'};
+const STATUS_CLASSES={idea:'status-idea',drafted:'status-drafted',review:'status-review',published:'status-published'};
+
+const SUGGESTIONS={
+  0:[
+    {type:'newsletter',topic:'Planning for ecology in 2026 — what developers need to know before spring survey season',audience:'developers'},
+    {type:'blog',topic:'Before you buy: the ecological due diligence checklist every developer needs',audience:'developers'},
+    {type:'linkedin',topic:'Buying land without ecological insight is buying an expensive headache. Here is what to check first.',audience:'developers'}
+  ],
+  1:[
+    {type:'blog',topic:'What a Preliminary Ecological Appraisal actually tells you — and why it matters before planning',audience:'developers'},
+    {type:'linkedin',topic:'Poor quality surveys get rejected by planning authorities. Here is what good looks like — and why it matters.',audience:'developers'},
+    {type:'blog',topic:'BNG calculations: why integrated design reduces the offset units you need to buy',audience:'developers'}
+  ],
+  2:[
+    {type:'blog',topic:'Spring survey season: bat, dormouse and great crested newt windows explained',audience:'developers'},
+    {type:'linkedin',topic:'Miss a survey window and you could wait six months. Here is what opens in March.',audience:'developers'}
+  ],
+  3:[
+    {type:'newsletter',topic:'Biodiversity Net Gain — the landowner opportunity in Cornwall',audience:'landowners'},
+    {type:'blog',topic:'How BNG is creating a new income stream for Cornish landowners',audience:'landowners'},
+    {type:'linkedin',topic:'You cannot sell your houses until BNG discharge is resolved. Here is how to make sure it never becomes the problem.',audience:'developers'}
+  ],
+  4:[
+    {type:'blog',topic:'Bat surveys and house sales: how early advice prevents a year-long delay',audience:'householders'},
+    {type:'linkedin',topic:'A bat roost in the loft can delay a house sale by nearly a year. It does not have to — if you get advice early.',audience:'householders'}
+  ],
+  5:[
+    {type:'blog',topic:'Why a single point of contact for ecology and landscape saves developers time and money',audience:'developers'},
+    {type:'linkedin',topic:'Separate ecology and landscape consultants create coordination gaps. One team from day one does not.',audience:'developers'},
+    {type:'blog',topic:'Pre-construction checks: the cheapest insurance against a build stop on day one',audience:'developers'}
+  ],
+  6:[
+    {type:'newsletter',topic:'Summer ecology update — what is in season and what to plan for autumn',audience:'general'},
+    {type:'blog',topic:'From outline to Reserved Matters: how continuity of ecological expertise saves time and cost',audience:'developers'},
+    {type:'linkedin',topic:'Conditions get forgotten. A stop order costs far more than the conditions discharge work that prevents it.',audience:'developers'}
+  ],
+  7:[
+    {type:'blog',topic:'What Cornwall Wildlife Trust ownership actually means — in practice, not on paper',audience:'general'},
+    {type:'linkedin',topic:'100% of our profits go back to Cornwall wildlife. Here is what that has meant over 30 years.',audience:'general'}
+  ],
+  8:[
+    {type:'blog',topic:'Ecological Clerk of Works: what they do, when you need one, and what a stop order costs without one',audience:'developers'},
+    {type:'linkedin',topic:'An inadvertent licence breach on site can stop your build. An ECoW is far cheaper than that risk.',audience:'developers'}
+  ],
+  9:[
+    {type:'newsletter',topic:'Planning ecology for 2027 — the conversations to have now',audience:'developers'},
+    {type:'blog',topic:'BNG monitoring: what developers owe the LPA after practical completion — and for the next 30 years',audience:'developers'},
+    {type:'linkedin',topic:'The LPA can penalise you for forgetting monitoring obligations. Here is how to make sure that never happens.',audience:'developers'}
+  ],
+  10:[
+    {type:'blog',topic:'Making Space for Nature: what 24 Cornish sites taught us about ecology in towns',audience:'general'},
+    {type:'linkedin',topic:'As CWT partners, CEC has BNG offset sites in place — removing a bottleneck that stops many developers in their tracks.',audience:'developers'}
+  ],
+  11:[
+    {type:'blog',topic:'A year in ecology: highlights from 2026 and what to plan for in 2027',audience:'general'},
+    {type:'linkedin',topic:'Another year working in Cornwall. What we learned — and what developers need to know going into 2027.',audience:'general'}
+  ]
+};
+
+const STORAGE_KEY='cec_calendar_v3';
+let currentYear=2026;
+let data={};
+let editingKey=null;
+let editingIdx=null;
+let promptItemRef=null;
+
+function key(y,m){return `${y}-${m}`}
+
+function load(){
+  try{const s=localStorage.getItem(STORAGE_KEY);if(s)data=JSON.parse(s);}catch(e){data={}}
+}
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+    const b=document.getElementById('savedBadge');b.classList.add('show');
+    setTimeout(()=>b.classList.remove('show'),1800);
+  }catch(e){}
+}
+
+function getItems(y,m){
+  const k=key(y,m);
+  if(!data[k])data[k]=SUGGESTIONS[m]?JSON.parse(JSON.stringify(SUGGESTIONS[m])):[];
+  return data[k];
+}
+
+function changeYear(d){currentYear+=d;document.getElementById('yearLabel').textContent=currentYear;render()}
+
+function render(){
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML='';
+  for(let m=0;m<12;m++){
+    const items=getItems(currentYear,m);
+    const card=document.createElement('div');
+    card.className='month-card';
+    const head=document.createElement('div');
+    head.className='month-head';
+    const pubCount=items.filter(i=>i.status==='published').length;
+    head.innerHTML=`<span>${MONTHS[m]}</span><span style="display:flex;align-items:center;gap:6px"><span class="month-q">${QUARTERS[m]}</span><span class="month-count">${pubCount}/${items.length}</span></span>`;
+    card.appendChild(head);
+    const body=document.createElement('div');
+    body.className='month-body';
+    items.forEach((item,i)=>{
+      const typeLabel={newsletter:'Newsletter',blog:'Blog',linkedin:'LinkedIn'}[item.type]||item.type;
+      const status=item.status||'idea';
+      const slot=document.createElement('div');
+      slot.className=`content-slot t-${item.type}`;
+      slot.innerHTML=`<div class="slot-inner">
+        <span class="slot-type">${typeLabel}</span>
+        <span class="slot-status ${STATUS_CLASSES[status]}">${STATUS_LABELS[status]}</span>
+        <span class="slot-title${item.topic?'':' empty'}" title="${(item.topic||'').replace(/"/g,'&quot;')}">${item.topic||'Add topic...'}</span>
+        <div class="slot-actions">
+          <button class="slot-btn" title="Generate prompt" onclick="showPrompt(${currentYear},${m},${i})">&#9654;</button>
+          <button class="slot-btn" title="Edit" onclick="openEdit(${currentYear},${m},${i})">&#9998;</button>
+          <button class="slot-btn" title="Remove" onclick="removeItem(${currentYear},${m},${i})">&#215;</button>
+        </div>
+      </div>`;
+      body.appendChild(slot);
+    });
+    const addBtn=document.createElement('button');
+    addBtn.className='add-btn';
+    addBtn.textContent='+ Add content';
+    addBtn.onclick=()=>openAdd(currentYear,m);
+    body.appendChild(addBtn);
+    card.appendChild(body);
+    grid.appendChild(card);
+  }
+}
+
+function openAdd(year,month){
+  editingKey=key(year,month);editingIdx=null;
+  document.getElementById('modalTitle').textContent=`Add content — ${MONTHS[month]} ${year}`;
+  document.getElementById('mType').value='blog';
+  document.getElementById('mTopic').value='';
+  document.getElementById('mAudience').value='developers';
+  document.getElementById('mStatus').value='idea';
+  document.getElementById('mContent').value='';
+  document.getElementById('charCount').textContent='0 characters';
+  buildSuggestions(month);
+  document.getElementById('modal').style.display='flex';
+  setTimeout(()=>document.getElementById('mTopic').focus(),60);
+}
+
+function openEdit(year,month,idx){
+  editingKey=key(year,month);editingIdx=idx;
+  const item=data[editingKey][idx];
+  document.getElementById('modalTitle').textContent=`Edit — ${MONTHS[month]} ${year}`;
+  document.getElementById('mType').value=item.type||'blog';
+  document.getElementById('mTopic').value=item.topic||'';
+  document.getElementById('mAudience').value=item.audience||'developers';
+  document.getElementById('mStatus').value=item.status||'idea';
+  document.getElementById('mContent').value=item.content||'';
+  const cc=item.content||'';
+  document.getElementById('charCount').textContent=cc.length+' characters';
+  buildSuggestions(month);
+  document.getElementById('modal').style.display='flex';
+}
+
+document.getElementById('mContent').addEventListener('input',function(){
+  document.getElementById('charCount').textContent=this.value.length+' characters';
+});
+
+function buildSuggestions(month){
+  const wrap=document.getElementById('suggestWrap');
+  const suggs=SUGGESTIONS[month]||[];
+  if(!suggs.length){wrap.innerHTML='';return}
+  const tags=suggs.map(s=>{
+    const safe=s.topic.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<span class="suggest-tag" onclick="applySuggest('${s.type}','${safe}','${s.audience}')">${s.topic}</span>`;
+  }).join('');
+  wrap.innerHTML=`<div class="suggest-label">Suggested topics for ${MONTHS[month]}</div><div class="suggest-tags">${tags}</div>`;
+}
+
+function applySuggest(type,topic,audience){
+  document.getElementById('mType').value=type;
+  document.getElementById('mTopic').value=topic;
+  document.getElementById('mAudience').value=audience;
+}
+
+function saveItem(){
+  const type=document.getElementById('mType').value;
+  const topic=document.getElementById('mTopic').value.trim();
+  const audience=document.getElementById('mAudience').value;
+  const status=document.getElementById('mStatus').value;
+  const content=document.getElementById('mContent').value.trim();
+  if(!topic){document.getElementById('mTopic').focus();return}
+  if(!data[editingKey])data[editingKey]=[];
+  const item={type,topic,audience,status,content};
+  if(editingIdx!==null)data[editingKey][editingIdx]=item;
+  else data[editingKey].push(item);
+  closeModal();save();render();
+}
+
+function removeItem(year,month,idx){
+  data[key(year,month)].splice(idx,1);save();render();
+}
+function closeModal(){document.getElementById('modal').style.display='none'}
+
+function buildPrompt(item,month){
+  const s=SEASON[month],q=QUARTERS[month],mn=MONTHS[month],aud=item.audience||'developers';
+  if(item.type==='newsletter'){
+    return `Write the ${q} newsletter for CEC.\n\nMain topic: "${item.topic}"\nTarget audience: ${aud}\n\nStructure:\n1. Opening — brief, sets the seasonal context for ${s}\n2. Main topic — practical, commercially grounded, plain English\n3. Seasonal ecology reminder — surveys open or closing in ${s}, what to act on now\n4. Soft CTA — book a call, request a PEA, or visit cecenvironment.co.uk\n\nShort paragraphs and subheadings. Easy to skim. Do not sound preachy.`;
+  }else if(item.type==='blog'){
+    return `Write a blog post for CEC.\n\nTopic: "${item.topic}"\nTarget audience: ${aud}\nMonth: ${mn} (${s}) — include seasonal context if relevant\n\nAim for 600–900 words:\n— Strong opening hook\n— Plain English throughout\n— Connect every technical point to a commercial or planning implication\n— Practical takeaway or clear next step\n— Soft CTA at the end\n\nReference a relevant CEC case study if it fits naturally. Do not sound academic or preachy.`;
+  }else{
+    return `Write a LinkedIn post for CEC.\n\nTopic: "${item.topic}"\nTarget audience: ${aud}\n\n— 150–300 words maximum\n— First line must stop the scroll\n— Plain English — explain any technical term\n— Frame around an insight, a risk, or a common mistake\n— End with a question to prompt engagement\n— One idea only. Do not sound corporate.`;
+  }
+}
+
+function showPrompt(year,month,idx){
+  const item=data[key(year,month)][idx];
+  promptItemRef=item;
+  document.getElementById('pModalTitle').textContent=`${item.topic||'Content item'}`;
+  document.getElementById('promptText').textContent=buildPrompt(item,month);
+  document.getElementById('copyBtn').textContent='Copy prompt to clipboard';
+  document.getElementById('copyBtn').className='copy-btn';
+  const scWrap=document.getElementById('savedContentWrap');
+  const scBox=document.getElementById('savedContentBox');
+  if(item.content){
+    scBox.textContent=item.content;
+    scWrap.style.display='block';
+    document.getElementById('copyContentBtn').textContent='Copy saved content to clipboard';
+    document.getElementById('copyContentBtn').className='copy-btn';
+  }else{
+    scWrap.style.display='none';
+  }
+  document.getElementById('promptModal').style.display='flex';
+}
+
+function copyPrompt(){
+  navigator.clipboard.writeText(document.getElementById('promptText').textContent).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='Copied!';btn.className='copy-btn copied';
+    showToast('Prompt copied — paste into ChatGPT');
+  }).catch(()=>showToast('Select text manually and copy (Ctrl+A, Ctrl+C)'));
+}
+
+function copyContent(){
+  navigator.clipboard.writeText(document.getElementById('savedContentBox').textContent).then(()=>{
+    const btn=document.getElementById('copyContentBtn');
+    btn.textContent='Copied!';btn.className='copy-btn copied';
+    showToast('Content copied to clipboard');
+  });
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal()});
+document.getElementById('promptModal').addEventListener('click',e=>{if(e.target===document.getElementById('promptModal'))document.getElementById('promptModal').style.display='none'});
+
+load();render();
+</script>
+</body>
+</html>
